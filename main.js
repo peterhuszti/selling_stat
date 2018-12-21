@@ -1,15 +1,20 @@
 // konfigurálható tetszés szerint-------------------------------------------------
 var linesBetweenDays = 4; // üres sorok száma két nap között
 
-var products = ["product1","product2","product3","product4","product5"];
-var prices = [150, 200, 300, 500, 200];
+var products = ["Ásványvíz 0,5 l","Ásványvíz 1,5 l","L-carn.+Gato. 0,5 l", "L-carn.+Absolute 1 l", "Energia ital", 
+                "Plussz tabletta", "BCAA Zero", "NitroX+BCAA Scitech", "Hot bl.+G Bomb+Black bl.+L-carn amp.", 
+                "Zsebkendő", "Tej", "Whey, Scitech turmix", "Biotech turmix", "Proteinissimo 50 g", "Excellent", 
+                "Zero Bar", "Napalm", "M'g 21+Oat&Fruit"];
+var prices = [150, 220, 300, 490, 200, 50, 200, 250, 350, 50, 0, 450, 300, 400, 460, 500, 450, 300];
 
 var columnWidth = 50; // oszlopok szélessége
-var productWidth = 250; // temrék oszlop szélessége
+var productWidth = 250; // termék oszlop szélessége
 
 // do not touch-------------------------------------------------------------------
 var lastCol = 'L';
 var lastColNum = 12;
+
+var dayOfWeek = ["Vasárnap", "Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek", "Szombat"];
 
 function reggel() {
   var sheet = createWorksheet();    
@@ -22,30 +27,20 @@ function delben() {
   protectHalf(sheet, startingCell);
 }
 
-Date.prototype.getWeek = function() {
-    var onejan = new Date(this.getFullYear(),0,1);
-    return Math.ceil((((this - onejan) / 86400000) + onejan.getDay()+1)/7);
-}
-
 function createWorksheet()
 {  
   var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
 
   var monthsToAdd = 1;
-  var currentDate = new Date();
 
-  var sheetName = currentDate.getWeek() + ". hét";
+  var sheetName = Utilities.formatDate(new Date(), "GMT+1", "w'. hét'");
 
   var sheetsArray = spreadsheet.getSheets();
-  var creationFlag = false;
+  var creationFlag = true;
 
   for(var i in sheetsArray) {
     if(sheetsArray[i].getSheetName() == sheetName) {
       creationFlag = false;
-      break;
-    }
-    else {
-      creationFlag = true;
     }
   }
 
@@ -111,7 +106,7 @@ function setHeadlineFormat(sheet, n) {
 
 function insertHeader(sheet, startingCell) {  
   var n = startingCell+linesBetweenDays;
-  sheet.getRange("A"+n).setValue(Utilities.formatDate(new Date(), "GMT+1", "yyyy. MMMM dd."));
+  sheet.getRange("A"+n).setValue(Utilities.formatDate(new Date(), "GMT+1", "yyyy. MMMM dd.") + " " + dayOfWeek[(new Date()).getDay()]);
 // morning
   sheet.getRange("C"+n).setValue("NY");
   sheet.getRange("D"+n).setValue("F"); // calc
@@ -146,10 +141,16 @@ function insertProducts(sheet, startingCell) {
 }
 
 function setFooterFormat(sheet, n) {
-  sheet.getRange('A'+n).setFontWeight("bold");
+  sheet.getRange('A'+n+':'+lastCol+n).setFontWeight("bold");
+  sheet.getRange('B'+n+':G'+n).mergeAcross();
+  sheet.getRange('H'+n+':L'+n).mergeAcross();
   sheet.getRange('B'+n+':'+lastCol+n).setHorizontalAlignment("center");
   
-  sheet.getRange('A'+(n+2)).setFontWeight("bold");
+  sheet.getRange('A'+(n+2)+':'+lastCol+n).setFontWeight("bold");
+  sheet.getRange('B'+(n+2)+':G'+(n+2)).mergeAcross();
+  sheet.getRange('H'+(n+2)+':L'+(n+2)).mergeAcross();
+  sheet.getRange('B'+(n+2)+':'+lastCol+(n+2)).setHorizontalAlignment("center");
+  
   sheet.getRange('A'+(n+4)).setFontWeight("bold");
 }
 
@@ -184,8 +185,8 @@ function protectUntil(sheet, startingCell, until) {
   var range1 = sheet.getRange('A1:B'+end);
   var range2 = sheet.getRange('D1:E'+end);
 //  var range3 = sheet.getRange('G:H');
-  var range4 = sheet.getRange('J1:'+until+end);
-  var range5 = sheet.getRange('A1:K'+n);
+  var range4 = sheet.getRange('J1:K'+end);
+  var range5 = sheet.getRange('A1:'+until+n);
 
 
   var protectedRanges = [range1, range2, range4, range5];
@@ -198,7 +199,7 @@ function protectUntil(sheet, startingCell, until) {
 }
 
 function protectSheet(sheet, startingCell) {  
-  protectUntil(sheet, startingCell, 'K');
+  protectUntil(sheet, startingCell, lastCol);
 }
 
 function protectHalf(sheet, startingCell) {
@@ -226,31 +227,61 @@ function createBorders(sheet, startingCell) {
   sheet.getRange('G'+end+':G'+(end+3)).setBorder(null,null,null,true,null,null);
 }
 
-function checkConsistency(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet();
+//function checkConsistency(e) {
+//  var sheet = SpreadsheetApp.getActiveSpreadsheet();
+//  var n = findStartingCell(sheet) + 1;
+//  var start = n-6-products.length;
+//  var end = start+products.length-1;
+//  
+//  var row = e.range.getRow();
+//  var col = e.range.getColumn();
+//  if (start <= row && row <= end) {
+//    if(col == 9) {
+//      if((sheet.getRange('F'+row).getValue() + sheet.getRange('G'+row).getValue()) != sheet.getRange('I'+row).getValue()) {
+//        sheet.getRange('I'+row).setBorder(true, true, true, true, null, null, 'black', SpreadsheetApp.BorderStyle.SOLID_THICK);
+//      } else {
+//        var before = ((sheet.getRange('F'+(row-1)).getValue() + sheet.getRange('G'+(row-1)).getValue()) != sheet.getRange('I'+(row-1)).getValue() && row != start);
+//        var after = ((sheet.getRange('F'+(row+1)).getValue() + sheet.getRange('G'+(row+1)).getValue()) != sheet.getRange('I'+(row+1)).getValue() && row != end);
+//        if (before && !after) {
+//          sheet.getRange('I'+row).setBorder(null, true, true, true, null, null, 'black', SpreadsheetApp.BorderStyle.SOLID);
+//        } else {
+//          if (after && !before) {
+//            sheet.getRange('I'+row).setBorder(true, true, null, true, null, null, 'black', SpreadsheetApp.BorderStyle.SOLID);
+//          } else {
+//            if (before && after) {
+//              sheet.getRange('I'+row).setBorder(null, true, null, true, null, null, 'black', SpreadsheetApp.BorderStyle.SOLID);
+//            } else {
+//              sheet.getRange('I'+row).setBorder(true, true, true, true, null, null, 'black', SpreadsheetApp.BorderStyle.SOLID); 
+//            }
+//          }
+//        }
+//      }
+//    }
+//  }
+//}
+
+function checkCol(col1, col2, sheet, offset) {  
   var n = findStartingCell(sheet) + 1;
   var start = n-6-products.length;
-  var end = start+products.length-1;
+  var end = start+products.length-1; 
   
-  var row = e.range.getRow();
-  var col = e.range.getColumn();
-  if (start <= row && row <= end) {
-    if(col == 9) {
-      if((sheet.getRange('F'+row).getValue() + sheet.getRange('G'+row).getValue()) != sheet.getRange('I'+row).getValue()) {
-        sheet.getRange('I'+row).setBorder(true, true, true, true, null, null, 'black', SpreadsheetApp.BorderStyle.SOLID_THICK);
+  for(var row = start; row<=end; row++) {
+    if(sheet.getRange(col2+row).getValue() != ""){
+      if(sheet.getRange(col1+(row+offset)).getValue() != sheet.getRange(col2+row).getValue()) {
+        sheet.getRange(col2+row).setBorder(true, true, true, true, null, null, 'black', SpreadsheetApp.BorderStyle.SOLID_THICK);
       } else {
-        var before = ((sheet.getRange('F'+(row-1)).getValue() + sheet.getRange('G'+(row-1)).getValue()) != sheet.getRange('I'+(row-1)).getValue() && row != start);
-        var after = ((sheet.getRange('F'+(row+1)).getValue() + sheet.getRange('G'+(row+1)).getValue()) != sheet.getRange('I'+(row+1)).getValue() && row != end);
+        var before = (sheet.getRange(col1+((row+offset)-1)).getValue() != sheet.getRange(col2+(row-1)).getValue() && row != start);
+        var after = (sheet.getRange(col1+((row+offset)+1)).getValue() != sheet.getRange(col2+(row+1)).getValue() && row != end);
         if (before && !after) {
-          sheet.getRange('I'+row).setBorder(null, true, true, true, null, null, 'black', SpreadsheetApp.BorderStyle.SOLID);
+          sheet.getRange(col2+row).setBorder(null, true, true, true, null, null, 'black', SpreadsheetApp.BorderStyle.SOLID);
         } else {
           if (after && !before) {
-            sheet.getRange('I'+row).setBorder(true, true, null, true, null, null, 'black', SpreadsheetApp.BorderStyle.SOLID);
+            sheet.getRange(col2+row).setBorder(true, true, null, true, null, null, 'black', SpreadsheetApp.BorderStyle.SOLID);
           } else {
             if (before && after) {
-              sheet.getRange('I'+row).setBorder(null, true, null, true, null, null, 'black', SpreadsheetApp.BorderStyle.SOLID);
+              sheet.getRange(col2+row).setBorder(null, true, null, true, null, null, 'black', SpreadsheetApp.BorderStyle.SOLID);
             } else {
-              sheet.getRange('I'+row).setBorder(true, true, true, true, null, null, 'black', SpreadsheetApp.BorderStyle.SOLID); 
+              sheet.getRange(col2+row).setBorder(true, true, true, true, null, null, 'black', SpreadsheetApp.BorderStyle.SOLID); 
             }
           }
         }
@@ -259,17 +290,24 @@ function checkConsistency(e) {
   }
 }
 
+function checkConsistency() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet();
+ 
+  checkCol('F','I',sheet,0);
+  checkCol('L','C',sheet,-1* (products.length + 7 + linesBetweenDays));
+}
+
 function insertNewDay(sheet) {
   var startingCell = findStartingCell(sheet) + 1;
   
   insertHeader(sheet, startingCell);
   insertProducts(sheet, startingCell);
-  insertFooter(sheet, startingCell);
   createBorders(sheet, startingCell);
+  insertFooter(sheet, startingCell);
   
   protectSheet(sheet, startingCell);
 }
 
-function onEdit(e) {
-  checkConsistency(e);
-}
+//function onEdit(e) {
+//  checkConsistency(e);
+//}
